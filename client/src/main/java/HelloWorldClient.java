@@ -1,3 +1,4 @@
+import com.google.common.util.concurrent.ListenableFuture;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -13,6 +14,7 @@ public class HelloWorldClient {
 
   private final ManagedChannel channel;
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
+  private final GreeterGrpc.GreeterFutureStub futureStub;
 
   /** Construct client connecting to HelloWorld server at {@code host:port}. */
   public HelloWorldClient(String host, int port) {
@@ -27,6 +29,7 @@ public class HelloWorldClient {
   HelloWorldClient(ManagedChannel channel) {
     this.channel = channel;
     blockingStub = GreeterGrpc.newBlockingStub(channel);
+    futureStub = GreeterGrpc.newFutureStub(channel);
   }
 
   public void shutdown() throws InterruptedException {
@@ -47,12 +50,24 @@ public class HelloWorldClient {
     logger.info("Greeting: " + response.getMessage());
   }
 
+  public ListenableFuture<Hello.HelloReply> testCancel(String name) {
+    Hello.HelloRequest request = Hello.HelloRequest.newBuilder().setName(name).build();
+    ListenableFuture<Hello.HelloReply> response = futureStub.testCancel(request);
+    return response;
+  }
+
+  public ListenableFuture<Hello.HelloReply> testCancelPropagation(String name) {
+    Hello.HelloRequest request = Hello.HelloRequest.newBuilder().setName(name).build();
+    ListenableFuture<Hello.HelloReply> response = futureStub.testCancelPropagation(request);
+    return response;
+  }
+
   /**
    * Greet server. If provided, the first element of {@code args} is the name to use in the
    * greeting.
    */
   public static void main(String[] args) throws Exception {
-    HelloWorldClient client = new HelloWorldClient("localhost", 50051);
+    HelloWorldClient client = new HelloWorldClient("localhost", 50052);
     try {
       /* Access a service running on the local machine on port 50051 */
       String user = "world";
